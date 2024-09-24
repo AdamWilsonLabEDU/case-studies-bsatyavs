@@ -14,8 +14,7 @@ hist(iris$Petal.Length)
 ggplot(data = iris, aes(x = Petal.Length)) +
   geom_histogram(color = "white", fill = "red")
 
-
-==summary(iris)
+summary(iris)
 
 ggplot(data = iris, aes(x = Petal.Length)) +
   geom_histogram(bins=50)
