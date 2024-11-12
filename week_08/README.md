@@ -1,6 +1,6 @@
 
 ---
-title: "Case Study 7"
+title: "Case Study 8"
 author: "Satya"
 date: "2024-10-30"
 format:
