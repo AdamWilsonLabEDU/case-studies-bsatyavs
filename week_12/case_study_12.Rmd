@@ -1,7 +1,77 @@
 ---
 title: "Case Study 12"
-author: Your Name
+author: Satya
 date: August 1, 2020
 output: github_document
 ---
  
+
+```{r}
+remotes::install_github("ropensci/rnoaa")
+```
+
+
+```{r}
+library(tidyverse)
+library(rnoaa)
+library(xts)
+library(dygraphs)
+library(htmlwidgets)
+library(widgetframe)
+
+```
+
+
+```{r}
+# Download daily max temperature data from NOAA for Buffalo, NY
+weather_data <- meteo_tidy_ghcnd("USW00014733",
+                                 date_min = "2016-01-01", 
+                                 var = c("TMAX"),
+                                 keep_flags = TRUE) %>%
+   mutate(date = as.Date(date),
+          tmax = as.numeric(tmax) / 10)  # Convert to degrees Celsius
+
+```
+ 
+```{r}
+# Convert to an xts time series object
+temp_xts <- xts(weather_data$tmax, order.by = weather_data$date)
+
+```
+
+
+```{r}
+# Create a dynamic dygraph
+temp_dygraph <- dygraph(temp_xts, main = "Daily Maximum Temperature in Buffalo, NY") %>%
+   dyRangeSelector(dateWindow = c("2020-01-01", "2020-10-31")) %>%
+   dyOptions(colors = "blue", strokeWidth = 1.5)
+
+```
+ 
+```{r}
+# Save the dygraph as an HTML file
+saveWidget(temp_dygraph, file = "buffalo_temp_dygraph.html")
+
+```
+ 
+ 
+```{r}
+# Download precipitation data
+precip_data <- meteo_tidy_ghcnd("USW00014733", date_min = "2016-01-01", var = c("PRCP")) %>%
+   mutate(date = as.Date(date),
+          prcp = as.numeric(prcp) / 10)  # Convert to cm if needed
+
+# Merge temperature and precipitation into one xts object
+weather_xts <- xts(cbind(weather_data$tmax, precip_data$prcp), order.by = weather_data$date)
+colnames(weather_xts) <- c("TMAX", "PRCP")
+
+# Plot both variables with dygraph
+weather_dygraph <- dygraph(weather_xts, main = "Daily Max Temp and Precipitation in Buffalo, NY") %>%
+   dySeries("TMAX", label = "Max Temperature (°C)", color = "blue") %>%
+   dySeries("PRCP", label = "Precipitation (cm)", color = "green") %>%
+   dyRangeSelector(dateWindow = c("2020-01-01", "2020-10-31"))
+   
+# Save the graph with precipitation
+saveWidget(weather_dygraph, file = "buffalo_weather_dygraph.html")
+
+```
