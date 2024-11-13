@@ -1,7 +1,34 @@
 ---
 title: "Case Study 07"
-author: Your Name
+author: Satya
 date: August 1, 2020
 output: github_document
 ---
+ 
+
+```{r}
+
+library(tidyverse)
+library(reprex)
+library(sf)
+library(spData)
+library(ggridges)
+library(ggplot2)
+```
+
+
+```{r}
+data(world)
+ggplot(world, aes(x = gdpPercap, y = continent, fill = continent)) +
+  geom_density_ridges(alpha = 0.5) +
+  scale_x_log10() +  # To adjust the x-axis scale for GDP (log scale)
+  theme_minimal() +
+  labs(title = "GDP per Capita by Continent",
+       x = "GDP per Capita (log scale)",
+       y = "Continent")
+
+reprex(venue = "gh")
+```
+
+
  
