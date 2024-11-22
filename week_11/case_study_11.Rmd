@@ -1,7 +1,120 @@
 ---
 title: "Case Study 11"
-author: Your Name
+author: Satya
 date: August 1, 2020
 output: github_document
 ---
- 
+
+title: "Parallel Racial Dot Map for Buffalo, NY"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(tidyverse)
+library(spData)
+library(sf)
+library(mapview)
+library(foreach)
+library(doParallel)
+library(tidycensus)
+
+# Register cores for parallel processing
+registerDoParallel(4)  # Adjust the number of cores as needed
+getDoParWorkers()  # Check registered cores
+```
+
+
+```{r setup, include=FALSE}
+readRenviron("~/.Renviron")
+```
+
+```{r}
+CENSUS_API_KEY= "cb961cb2bb8e534bdcb03306aa901fa7fca5b5cc"
+```
+
+
+
+
+```{r}
+Sys.getenv("CENSUS_API_KEY")
+
+race_vars <- c(
+  "Total Population" = "P1_001N",
+  "White alone" = "P1_003N",
+  "Black or African American alone" = "P1_004N",
+  "American Indian and Alaska Native alone" = "P1_005N",
+  "Asian alone" = "P1_006N",
+  "Native Hawaiian and Other Pacific Islander alone" = "P1_007N",
+  "Some Other Race alone" = "P1_008N",
+  "Two or More Races" = "P1_009N"
+)
+
+options(tigris_use_cache = TRUE)
+erie <- get_decennial(geography = "block", variables = race_vars, year=2020,
+                  state = "NY", county = "Erie County", geometry = TRUE,
+                  sumfile = "pl", cache_table=T) 
+```
+
+```{r}
+erie <- st_crop(erie, xmin = -78.9, xmax = -78.85, ymin = 42.888, ymax = 42.92)
+
+```
+
+```{r}
+
+library(tidyr)
+
+# Prepare a list of racial groups
+race_groups <- unique(erie$variable)
+
+# Parallel foreach loop to generate random points for each person in each race group
+(dot_map <- foreach(race = race_groups, .combine = rbind, .packages = c("sf", "dplyr", "tidyr")) %dopar% {
+  race_data <- erie %>% filter(variable == race)
+  
+  # Generate points for each person in the selected race
+  race_points <- race_data %>%
+    rowwise() %>%
+    mutate(geometry = list(st_sample(geometry, size = value, exact = TRUE))) %>% # Wrap in list()
+    unnest(cols = c(geometry)) %>% # Unnest the list column
+    st_as_sf() %>%
+    mutate(race_group = race)
+  
+  race_points
+})
+
+
+
+```
+
+```{r}
+
+library(RColorBrewer)
+
+# Define color palette for race groups
+race_colors <- brewer.pal(n = length(race_groups), "Set3")  # Replace "Set3" with other palettes if needed
+
+# Match colors to race groups
+race_colors_named <- setNames(race_colors, race_groups)
+
+```
+
+
+```{r}
+library(mapview)
+
+# Create the interactive map
+mapview(
+  dot_map,                          # Spatial dataset with points
+  zcol = "race_group",              # Column used for color mapping
+  cex = 0.5,                        # Size of the points
+  legend = TRUE,
+  stroke = FALSE# Show legend
+)
+
+```
+
+
+
+
